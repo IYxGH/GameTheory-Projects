@@ -1,0 +1,140 @@
+\documentclass[12pt]{article}
+
+% \linespread{1.35} % for line distances, not change this
+
+\usepackage[colorlinks=true, urlcolor=blue, linkcolor=blue]{hyperref}
+\usepackage{amsmath, amssymb, amsfonts, amsthm}
+\usepackage{breqn} % math related
+\usepackage{paralist} % to put items in line
+\usepackage[most]{tcolorbox}
+\usepackage{fontawesome5}
+\usepackage{xcolor}
+\tcbuselibrary{skins,breakable,theorems}
+\usepackage{xepersian}
+
+\definecolor{QuestionBlue}{RGB}{30,90,170}
+\definecolor{QuestionBack}{RGB}{245,248,255}
+\definecolor{MyGreen}{RGB}{40,120,60}
+\definecolor{MyGreenBack}{RGB}{243,250,243}
+
+\newtcbtheorem[
+    auto counter,
+    number within=section
+]{question}{سؤال}{
+    enhanced,
+    breakable,
+    colback=QuestionBack,
+    colframe=QuestionBlue,
+    coltitle=white,
+    fonttitle=\bfseries,
+    title filled,
+    attach boxed title to top right={
+        xshift=-2mm,
+        yshift=-2mm
+    },
+    boxed title style={
+        colback=QuestionBlue,
+        colframe=QuestionBlue,
+        arc=2mm
+    },
+    arc=2mm,
+    boxrule=0.8pt,
+    left=2mm,
+    right=2mm,
+    top=2mm,
+    bottom=2mm,
+    before skip=12pt,
+    after skip=12pt,
+}{q}
+
+\newtcolorbox{greenbox}[1]{
+    enhanced,
+    breakable,
+    colback=MyGreenBack,
+    colframe=MyGreen,
+    coltitle=white,
+    fonttitle=\bfseries,
+    title={#1},
+    title filled,
+    attach boxed title to top right={
+        xshift=-4mm,
+        yshift=-2mm
+    },
+    boxed title style={
+        colback=MyGreen,
+        colframe=MyGreen,
+        arc=2mm
+    },
+    arc=2mm,
+    boxrule=0.8pt,
+    left=2mm,
+    right=2mm,
+    top=2mm,
+    bottom=2mm,
+    before skip=10pt,
+    after skip=10pt
+}
+
+\newenvironment{solution}
+{
+    \par\medskip
+    \hrule
+    \smallskip
+    \noindent\textbf{راه‌حل.}
+    \par\smallskip
+}
+{
+    \par\smallskip
+    \smallskip
+    \hrule
+    \medskip
+}
+
+
+
+% \settextfont{XB Roya}
+\settextfont{Sharif 1.2 Regular}
+
+\begin{document}
+
+\begin{titlepage}
+
+\centering
+
+\vspace*{2cm}
+
+{\Large\textbf{دانشگاه صنعتی شریف}}
+
+\vspace{0.5cm}
+
+{\large دانشکده مهندسی کامپیوتر}
+
+\vspace{2cm}
+
+{\Huge\bfseries گزارش پروژه اول}
+
+\vspace{0.5cm}
+
+{\Huge نمیدونم}
+
+\vspace{2.5cm}
+
+{\large
+\begin{tabular}{rc}
+    \textbf{درس:} & نظریه بازی‌ها\\[0.3cm]
+    \textbf{استاد:} & دکتر سمیرا حسین‌قربان\\[0.3cm]
+    \textbf{دانشجو:} & ایلیا یزدانی
+\end{tabular}
+}
+
+\vfill
+
+{\large تابستان ۱۴۰۵}
+
+\end{titlepage}
+
+\tableofcontents
+
+\newpage
+
+\end{document}

@@ -1,0 +1,251 @@
+\documentclass[12pt]{article}
+
+% \linespread{1.35} % for line distances, not change this
+
+\usepackage[colorlinks=true, urlcolor=blue, linkcolor=blue]{hyperref}
+\usepackage{amsmath, amssymb, amsfonts, amsthm}
+\usepackage{breqn} % math related
+\usepackage{paralist} % to put items in line
+\usepackage[most]{tcolorbox}
+\usepackage{fontawesome5}
+\usepackage{xcolor}
+\tcbuselibrary{skins,breakable,theorems}
+\usepackage{xepersian}
+
+\definecolor{QuestionBlue}{RGB}{30,90,170}
+\definecolor{QuestionBack}{RGB}{245,248,255}
+\definecolor{MyGreen}{RGB}{40,120,60}
+\definecolor{MyGreenBack}{RGB}{243,250,243}
+
+\newtcbtheorem[
+    auto counter,
+    number within=section
+]{question}{سؤال}{
+    enhanced,
+    breakable,
+    colback=QuestionBack,
+    colframe=QuestionBlue,
+    coltitle=white,
+    fonttitle=\bfseries,
+    title filled,
+    attach boxed title to top right={
+        xshift=-2mm,
+        yshift=-2mm
+    },
+    boxed title style={
+        colback=QuestionBlue,
+        colframe=QuestionBlue,
+        arc=2mm
+    },
+    arc=2mm,
+    boxrule=0.8pt,
+    left=2mm,
+    right=2mm,
+    top=2mm,
+    bottom=2mm,
+    before skip=12pt,
+    after skip=12pt,
+}{q}
+
+\newtcolorbox{greenbox}[1]{
+    enhanced,
+    breakable,
+    colback=MyGreenBack,
+    colframe=MyGreen,
+    coltitle=white,
+    fonttitle=\bfseries,
+    title={#1},
+    title filled,
+    attach boxed title to top right={
+        xshift=-4mm,
+        yshift=-2mm
+    },
+    boxed title style={
+        colback=MyGreen,
+        colframe=MyGreen,
+        arc=2mm
+    },
+    arc=2mm,
+    boxrule=0.8pt,
+    left=2mm,
+    right=2mm,
+    top=2mm,
+    bottom=2mm,
+    before skip=10pt,
+    after skip=10pt
+}
+
+\newenvironment{solution}
+{
+    \par\medskip
+    \hrule
+    \smallskip
+    \noindent\textbf{راه‌حل.}
+    \par\smallskip
+}
+{
+    \par\smallskip
+    \smallskip
+    \hrule
+    \medskip
+}
+
+
+
+% \settextfont{XB Roya}
+\settextfont{Sharif 1.2 Regular}
+
+\begin{document}
+
+\begin{titlepage}
+
+\centering
+
+\vspace*{2cm}
+
+{\Large\textbf{دانشگاه صنعتی شریف}}
+
+\vspace{0.5cm}
+
+{\large دانشکده مهندسی کامپیوتر}
+
+\vspace{2cm}
+
+{\Huge\bfseries گزارش پروژه دوم}
+
+\vspace{0.5cm}
+
+{\Huge رای‌گیری تاییدی چندمرحله‌ای}
+
+\vspace{2.5cm}
+
+{\large
+\begin{tabular}{rc}
+    \textbf{درس:} & نظریه بازی‌ها\\[0.3cm]
+    \textbf{استاد:} & دکتر سمیرا حسین‌قربان\\[0.3cm]
+    \textbf{دانشجو:} & ایلیا یزدانی
+\end{tabular}
+}
+
+\vfill
+
+{\large تابستان ۱۴۰۵}
+
+\end{titlepage}
+
+\tableofcontents
+
+\newpage
+
+\begin{abstract}
+    در این گزارش به پرسش‌های مطرح شده در پروژه داده شده به طور کامل پاسخ می‌دهیم.
+\end{abstract}
+
+\section{رای‌دهنده}
+
+\subsection*{پرسش‌های بخش اطلاعات کامل}
+
+\begin{enumerate}
+    \item {
+
+        بله این پروفایل همواره یک تعادل نش است.
+        
+        در این سیستم امتیاز هر کاندید صرفا به رای های هر نفر بستگی دارد و هر چه در 
+        مجموعه‌های تاییدی بیشتری قرار داشته باشد، 
+        شانس او برای قرار گرفتن در کمیته نهایی افزایش
+        پیدا می‌کند. در واقع برخلاف قاعده‌های
+         دیگری که معرفی شده، کاندیدهای دیگر در کمیته نهایی در
+        امتیاز یک کاندید تاثیری ندارند. با توجه به این موضوع، به طور شهودی
+        مشخص است که یکی از بهترین استراتژی هر رای‌دهنده این است که تنها تمام کاندیدهای
+        مورد تاییدش را در لیستش قرار دهد.
+
+        برای اثبات دقیق این موضوع، به طور تدریجی بهترین پاسخ رای‌دهنده را به مجموعه
+        کاندیدهای مورد تاییدش تبدیل می‌کنیم، به طوری که سود او کاهش نیابد. فرض کنید
+        رای‌دهنده مورد بررسی 
+        (برای راحتی او را ایلیا می‌نامیم)
+        به مجموعه $B'$
+        رای داده باشد در حالی که مجموعه‌ی کاندیدهای مورد تایید او $B$ 
+        باشد.
+
+        تا زمانی که کاندید $c'$ 
+        در $B'$ 
+        وجود دارد که در $B$ 
+        نیست، آن را از $B'$ 
+        خارج می‌کنیم. با اینکار تنها نماینده‌ای که امتیاز از دست می‌دهد 
+        همان $c'$
+        است. بنابراین تنها تغییر ممکن در کمیته نهایی خارج شدن 
+        $c'$
+        و ورود کاندید دیگری است که قطعا مطلوبیت ایلیا را کاهش نمی‌دهد.
+        با انجام این روند خواهیم داشت
+        $B' \subseteq B $
+        .
+        
+        فرض کنید $c \in B$
+        باشد که در $B'$
+        نیست. با اضافه کردن این کاندید در $B'$
+        بدون تغییر امتیاز باقی کاندیدها، تنها امتیاز $c$
+        افزایش می‌یابد. بنابراین تنها تغییر ممکن در کمیته انتخاب شده، 
+        این است که $c$ وارد شود و کاندیدی دیگر خارج شود. وارد شدن
+        $c$
+        مطلوبیت ایلیا را یک واحد افزایش می‌دهد و خارج شدن یک کاندید مطلوبیت ایلیا
+        را حداکثر یک واحد کاهش می‌دهد. پس در این تغییر هم مطلوبیت ایلیا کم
+        نمی‌شود. با انجام این روند روی تمام $c \in B$
+        خواهیم داشت $B = B'$.
+
+        پس ما با یک سری تغییر باعث شدیم بدون کم شدن از مطلوبیت ایلیا
+        رای او صادقانه شود. در واقع:
+        \[
+        u_i(F(B, B_{-i})) \ge u_i(F(B',B_{-i}))
+        \]
+
+        بنابراین برای هر رای‌دهنده اثبات کردیم که بهترین پاسخ او به هر پروفایلی
+        رای صادقانه است. این موضوع نتیجه می‌دهد که این پروفایل یک تعادل نش
+        است.
+        }
+        \item {
+            در این بازی، مانند تمام بازی‌ها، بهترین پاسخ رای‌دهنده، کنشی
+            است که مطلوبیت او را بیشینه کند. 
+            (با فرض اطلاع از استراتژی باقی رای‌دهنده‌ها)
+            در واقع در این بازی بهترین پاسخ، بهترین مجموعه‌ای است که 
+            یک نفر می‌تواند انتخاب کند که بیشترین کاندید موردتاییدش
+            در کمیته نهایی قرار بگیرد.
+
+            در سوال اول همین بخش ثابت کردیم که رای صادقانه، همیشه بهترین 
+            پاسخ است. (در واقع در اثبات آن از اینکه استراتژی باقی 
+            رای‌دهنده‌ها چیست استفاده نکردیم)
+            پس جواب این سوال 
+            "بله"
+            است.
+        }
+        \item {
+            همانطور که در پاسخ سوال اول همین بخش گفته شد، مهمترین نکته‌ای
+            باعث جلوگیری از انحراف سودمند در این قاعده می‌شود، این
+            است که هر کاندید به طور مستقل از باقی کاندیدها امتیازدهی
+            می‌شود و انتخاب یک کاندید روی انتخاب کاندید دیگر اثری نمی‌گذارد.
+
+            یکی دیگر از ویژگی‌های موثر در این موضوع این است تغییر
+            رای یک بازیکن نتیجه را چندان تغییر نمی‌دهد. همانطور که بررسی کردیم
+            هر یک جابجایی در رای یک نفر، نهایتا موجب یک تغییر در کمیته نهایی
+            می‌شود.
+
+            دو ویژگی دیگر ذکر شده ارتباط چندانی بر جلوگیری از انحراف ندارند.
+            نحوه شکستن حالت تساوی، اگر معقول باشد باعث انحراف یا عدم انحراف نمی‌شود.
+            فاصله زیاد میان کاندیدهای منتخب و غیرمنتخب هم تاثیر چندانی ندارد.
+
+            به طور کلی چیزی که می‌تواند رای‌هنده را به رای غیرصادقانه سوق دهد،
+            این است که با قرار ندادن یک یا چند کاندید موردتاییدش
+            در مجموعه رای خود، باعث قرار گرفتن کاندیدهای بیشتری در کمیته نهایی شود.
+            موضوعی که با این قاعده قابل انجام نیست.
+        }
+        \item {
+            
+        }
+\end{enumerate}
+
+\section{برگزار‌کننده}
+\section{پرسش نهایی}
+
+
+
+
+\end{document}

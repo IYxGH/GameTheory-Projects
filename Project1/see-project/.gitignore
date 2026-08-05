@@ -1,0 +1,14 @@
+docs/handout/handout.aux
+docs/handout/handout.log
+docs/handout/handout.out
+__pycache__/
+.pytest_cache/
+*.pyc
+submissions/
+tournament_out/
+*.pt
+!benchmarks/master_agent.pt
+seeboard/data/
+deploy/seeboard.env
+.DS_Store
+**/.DS_Store

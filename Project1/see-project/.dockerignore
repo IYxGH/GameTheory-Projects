@@ -1,0 +1,15 @@
+# keep the build context small and cache-friendly
+.git
+seeboard/data
+docs
+examples
+deploy
+tournament_out
+submissions
+tests
+**/__pycache__
+**/.pytest_cache
+*.pt
+!benchmarks/master_agent.pt
+*.md
+!seeboard/README.md
