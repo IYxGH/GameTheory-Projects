@@ -1,3 +1,3 @@
 \contentsline {section}{\numberline {1}رای‌دهنده}{2}{section.1}%
-\contentsline {section}{\numberline {2}برگزار‌کننده}{4}{section.2}%
-\contentsline {section}{\numberline {3}پرسش نهایی}{4}{section.3}%
+\contentsline {section}{\numberline {2}برگزار‌کننده}{5}{section.2}%
+\contentsline {section}{\numberline {3}پرسش نهایی}{5}{section.3}%
