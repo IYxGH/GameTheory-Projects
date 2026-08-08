@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.4) (preloaded format=xelatex 2025.7.22)  7 AUG 2026 14:30
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.4) (preloaded format=xelatex 2025.7.22)  8 AUG 2026 14:19
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1342,10 +1342,10 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 
 
 [1]
-Missing character: There is no ، in font cmr12!
-
 
 [2]
+Missing character: There is no ، in font cmr12!
+
 
 [3]
 
@@ -1369,21 +1369,25 @@ Missing character: There is no ، in font cmr12!
 
 [13]
 
-[14] (report.aux)
+[14]
+
+[15]
+
+[16] (report.aux)
  ***********
 LaTeX2e <2025-06-01> patch level 1
 L3 programming layer <2025-07-11>
  ***********
 Package rerunfilecheck Info: File `report.out' has not changed.
-(rerunfilecheck)             Checksum: C9CD775BD1B8374F878996833FAA3A6A;2640.
+(rerunfilecheck)             Checksum: 3AD30E5BBE2AAA8ECB8739A266C1F562;2748.
  ) 
 Here is how much of TeX's memory you used:
- 33810 strings out of 403265
- 722635 string characters out of 5461437
- 1199252 words of memory out of 5000000
- 61680 multiletter control sequences out of 15000+600000
- 637193 words of font info for 112 fonts, out of 8000000 for 9000
+ 33814 strings out of 403265
+ 722871 string characters out of 5461437
+ 1200252 words of memory out of 5000000
+ 61682 multiletter control sequences out of 15000+600000
+ 637209 words of font info for 114 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 98i,9n,105p,1216b,415s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 98i,9n,105p,1216b,417s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on report.pdf (15 pages).
+Output written on report.pdf (17 pages).

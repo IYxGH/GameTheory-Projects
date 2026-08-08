@@ -18,7 +18,7 @@
 2. **Train** (from the repo root):
    ```bash
    python scripts/train.py --theory submission_template/theory.py \
-          --team "your-team-name" --steps 300000 --out submission.pt
+          --team "IYxGT" --steps 300000 --out submission.pt
    ```
    `--resume submission.pt` continues a run; `--seed` varies init.
 

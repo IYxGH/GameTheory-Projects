@@ -1,13 +1,14 @@
 \contentsline {section}{\numberline {1}مقدمه: فهم مدل}{2}{section.1}%
 \contentsline {section}{\numberline {2}تحلیل نظری}{3}{section.2}%
 \contentsline {subsection}{\numberline {2.1}تحلیل تصمیم ادامه یا خروج}{3}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}تحلیل هزینه مؤثر}{5}{subsection.2.2}%
-\contentsline {subsection}{\numberline {2.3}تحلیل باورها و اطلاعات ناقص}{6}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.2}تحلیل هزینه مؤثر}{6}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}تحلیل باورها و اطلاعات ناقص}{7}{subsection.2.3}%
 \contentsline {subsection}{\numberline {2.4}تحلیل سیگنال‌دهی پرهزینه}{8}{subsection.2.4}%
 \contentsline {subsection}{\numberline {2.5}تحلیل تعارض اعتبار و انعطاف‌پذیری}{9}{subsection.2.5}%
 \contentsline {subsection}{\numberline {2.6}تحلیل ارزش خروج}{10}{subsection.2.6}%
 \contentsline {subsection}{\numberline {2.7}تحلیل تعادلی}{11}{subsection.2.7}%
-\contentsline {subsection}{\numberline {2.8}گزاره تحلیلی}{12}{subsection.2.8}%
+\contentsline {subsection}{\numberline {2.8}گزاره تحلیلی}{13}{subsection.2.8}%
 \contentsline {section}{\numberline {3}پیاده‌سازی (انشاالله خالی بماند)}{13}{section.3}%
 \contentsline {section}{\numberline {4}تفسیر نتایج}{13}{section.4}%
 \contentsline {section}{\numberline {5}محدودیت‌های مدل}{14}{section.5}%
+\contentsline {section}{\numberline {6}جمع‌بندی}{16}{section.6}%
