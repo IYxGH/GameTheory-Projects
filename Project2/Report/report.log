@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.4) (preloaded format=xelatex 2025.7.22)  9 AUG 2026 13:30
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.4) (preloaded format=xelatex 2025.7.22)  9 AUG 2026 18:08
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1370,7 +1370,34 @@ ular(0)/m/n/12 بزرگتر باشد، احتمال انحراف بیشتر می
 
 [11]
 
-[12] (report.aux)
+[12]
+
+[13]
+Overfull \hbox (21.56625pt too wide) detected at line 1065
+[]
+ []
+
+File: Picture1.png Graphic file (type bmp)
+<Picture1.png>
+
+Overfull \hbox (2.7286pt too wide) in paragraph at lines 1091--1111
+[][]\TU/Sharif1.2Regular(0)/m/n/12 ساختار را به این صورت در نظر می‌گیریم. $\OML
+/cmm/m/it/12 c\OT1/cmr/m/n/12 (\OML/cmm/m/it/12 a \OT1/cmr/m/n/12 + \OML/cmm/m/
+it/12 c\OT1/cmr/m/n/12 )$ \TU/Sharif1.2Regular(0)/m/n/12 بازیکن نوع اول داریم، 
+که هرکدام کاندیدهای $\OMS/cmsy/m/n/12 f\OML/cmm/m/it/12 x[]; x[]; [] x[]\OMS/cm
+sy/m/n/12 g$[]
+ []
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+
+
+[14]
+
+[15]
+
+[16] (report.aux)
  ***********
 LaTeX2e <2025-06-01> patch level 1
 L3 programming layer <2025-07-11>
@@ -1379,12 +1406,12 @@ Package rerunfilecheck Info: File `report.out' has not changed.
 (rerunfilecheck)             Checksum: BE1B99E0883366CE7DC7E59866CB1680;377.
  ) 
 Here is how much of TeX's memory you used:
- 33793 strings out of 403265
- 722580 string characters out of 5461437
+ 33803 strings out of 403265
+ 722740 string characters out of 5461437
  1199252 words of memory out of 5000000
- 61668 multiletter control sequences out of 15000+600000
+ 61676 multiletter control sequences out of 15000+600000
  635346 words of font info for 107 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 98i,11n,105p,1216b,532s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 98i,11n,105p,1216b,523s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on report.pdf (13 pages).
+Output written on report.pdf (17 pages).
