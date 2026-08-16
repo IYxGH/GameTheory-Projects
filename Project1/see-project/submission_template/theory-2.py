@@ -1,3 +1,4 @@
+
 import numpy as np
 
 from see.training.theory_api import TheorySpec
@@ -10,11 +11,12 @@ T_FRAC, RHO, M_HAT, E_HAT, K_OWN, K_OPP, SIG_OWN, SIG_OPP, MED = range(9)
 GAMMA = 0.995
 CFG = canonical_config()
 
+
 class MyTheory(TheorySpec):
     """Simple theory features designed for robust baseline play."""
 
-    name = ("theory-heuristic")
-    extra_feature_dim = 10
+    name = "theory"
+    extra_feature_dim = 9
 
     def on_episode_start(self, player_id):
         # No hidden memory is needed.
@@ -87,6 +89,8 @@ class MyTheory(TheorySpec):
 
         response_matches = 0
         response_count = 0
+
+        # This is the player's standing signal immediately BEFORE each stage.
         previous_own_sigma = 0.0
 
         for h in history:
@@ -94,6 +98,8 @@ class MyTheory(TheorySpec):
             opp_sigma = float(h["sigma"].get(opp, 0.0))
 
             if len(active) == 2:
+                # Both players chose their new posture. This is the cleanest
+                # public evidence about the opponent's own preference.
                 initiative_sum += opp_sigma
                 initiative_count += 1
                 if opp_sigma >= 0.75:
@@ -101,7 +107,8 @@ class MyTheory(TheorySpec):
 
             elif len(active) == 1 and opp in active:
                 # The opponent was responding to us. Compare its new signal
-                # with our previous standing signal.
+                # with our previous standing signal. Exact equality is natural
+                # here because the signal ladder has only five values.
                 response_count += 1
                 if abs(opp_sigma - previous_own_sigma) < 1e-8:
                     response_matches += 1
@@ -128,7 +135,6 @@ class MyTheory(TheorySpec):
         }
 
     def _estimated_type(self, player_id, public_state):
-        """Estimate opponent resolve and cost-management ability."""
         pp = CFG.players[self._opponent_id(player_id)]
         stats = self._history_statistics(player_id, public_state)
 
@@ -405,10 +411,23 @@ class MyTheory(TheorySpec):
         g_i = self._own_flow_cost(player_id, obs)
 
         # Generic responsiveness statistic: how often the opponent mirrors
-        # our previous standing signal on response turns.
+        # our previous standing signal on response turns. This becomes high
+        # against Tit-for-Tat, but it is NOT hard-coded as "the opponent is
+        # TFT" and therefore remains meaningful for other policies too.
         stats = self._history_statistics(player_id, public_state)
         response_score = stats["response_match"]
 
+        # Expected mediation outlook from the public Markov rule.
+        calm = (
+            float(obs[SIG_OWN]) + float(obs[SIG_OPP])
+            <= CFG.calm_thresh
+        )
+        if float(obs[MED]) > 0.5:
+            mediation_outlook = 1.0 - CFG.p_close
+        else:
+            mediation_outlook = (
+                CFG.p_open_calm if calm else CFG.p_open_hot
+            )
 
         return np.array(
             [
@@ -417,8 +436,7 @@ class MyTheory(TheorySpec):
                 est_e,                         # 2 opponent endurance
                 margin,                         # 3 continuation margin
                 relative_endurance,             # 4 own - opponent endurance
-                min(opponent_cost / 8.0, 2.0), # 5 opponent flow cost
-                response_score,                # 6 response/TFT-likeness
+                min(opponent_cost / 8.0, 2.0), # 5 opponent flow cost response_score 6 response/TFT-likeness
                 X_i / 48.0,                    # 7 own exit value
                 X_j / 48.0,                    # 8 opponent exit value
                 min(g_i / 8.0, 2.0),           # 9 own flow cost
@@ -431,12 +449,6 @@ class MyTheory(TheorySpec):
     # ------------------------------------------------------------------ #
 
     def _current_public_state(self, next_public):
-        """
-        Recover the public state corresponding to 'obs'.
-
-        next_public is the public state AFTER the current transition, so its
-        history contains one additional stage compared with the state in obs.
-        """
         history = next_public.get("history", [])
 
         current_public = dict(next_public)
@@ -449,17 +461,6 @@ class MyTheory(TheorySpec):
         return current_public
 
     def _tft_responsiveness(self, player_id, public_state):
-        """
-        Estimate how strongly the opponent behaves like Tit-for-Tat.
-
-        We only count genuine response opportunities:
-        - we made a high signal;
-        - the opponent became the only active player;
-        - we compare the opponent's response with our previous signal.
-
-        A high score means:
-            "The opponent is very likely to mirror my escalation."
-        """
         opp = self._opponent_id(player_id)
         history = public_state.get("history", [])
 
@@ -525,6 +526,7 @@ class MyTheory(TheorySpec):
         )
 
         K_own = float(obs[K_OWN]) * 4.0
+        K_opp = float(obs[K_OPP]) * 4.0
 
         sigma_own = float(obs[SIG_OWN])
         sigma_opp = float(obs[SIG_OPP])
@@ -552,52 +554,50 @@ class MyTheory(TheorySpec):
         )
 
         # -------------------------------------------------------------- #
-        # 2. State Expected Value (Fixed Sunk-Cost Bug)
+        # 2. Local continuation advantage
         # -------------------------------------------------------------- #
-
         p_win = self._p_outlasting(player_id, obs, public_state)
+        local_margin = p_win * (B - X) - g
 
-        # Approximate the absolute expected value of the current state,
-        # projecting roughly 4 steps of flow cost into the future.
-        expected_value = p_win * B + (1.0 - p_win) * X - (g * 4.0)
-
-        # Scale down to roughly fit a [-1, 1.5] range so it balances
-        # with the other heuristic components. (Base B is ~175).
-        decision_term = expected_value / 100.0
+        decision_term = np.tanh(
+            local_margin / 40.0
+        )
 
         # -------------------------------------------------------------- #
-        # 3. Endurance Health
+        # 3. Endurance health
         # -------------------------------------------------------------- #
 
         health_term = (
-                0.5 * e_hat
-                + 0.3 * rho
-                + 0.2 * m_hat
-                - 0.5
+            0.5 * e_hat
+            + 0.3 * rho
+            + 0.2 * m_hat
+            - 0.5
         )
 
-        health_term = np.tanh(health_term)
-
+        # Keep the health contribution relatively small.
+        health_term = np.tanh(
+            health_term
+        )
         # -------------------------------------------------------------- #
         # 4. Commitment
         # -------------------------------------------------------------- #
 
+        # Scale commitment dynamically by the player's actual audience cost
+        # parameter (alpha). The U.S. will now properly fear K accumulation.
         commitment_term = (
                                   pp.alpha * K_own
                           ) / 4.0
 
         # -------------------------------------------------------------- #
-        # 5. Escalation & Risk Trap (Added Joint Risk)
+        # Escalation Trap
         # -------------------------------------------------------------- #
-
-        # We now include the eta cross-term so the agent learns to fear
-        # mutual high-posture standoffs.
         total_escalation = (
                 sigma_own ** 2
                 + (pp.kappa / 3.0) * sigma_opp ** 2
-                + (pp.eta / 2.5) * (sigma_own * sigma_opp)
         )
 
+        # If the opponent is responsive, our own escalation is especially
+        # dangerous because it is likely to be mirrored.
         tft_like = self._tft_responsiveness(
             player_id,
             public_state,
@@ -607,21 +607,40 @@ class MyTheory(TheorySpec):
                 tft_like * sigma_own ** 2
         )
 
+        mediation = float(obs[MED])
+
         # -------------------------------------------------------------- #
-        # Final potential (Added Mediation Attractor)
+        # Final potential
         # -------------------------------------------------------------- #
+        if player_id == US:
+            return float(
+                1.00 * decision_term
+                + 0.50 * X
+                + 0.15 * mediation
+                + 0.20 * health_term
+                - 0.15 * commitment_term
+                - 0.20 * total_escalation
+                - 0.30 * responsive_escalation
+            )
+        elif player_id == IRAN:
+            return float(
+                1.00 * decision_term
+                + 0.50 * B
+                + 0.20 * health_term
+                - 0.15 * commitment_term
+                - 0.20 * total_escalation
+                - 0.30 * responsive_escalation
+            )
 
         return float(
-            0.80 * decision_term
+            1.00 * decision_term
             + 0.20 * health_term
             - 0.15 * commitment_term
             - 0.20 * total_escalation
             - 0.30 * responsive_escalation
-            + 0.10 * mediation
         )
 
     def shaping(self, player_id, obs, action, env_reward, next_obs, next_public, terminated):
-        """ Potential-based reward shaping """
 
         # Recover the public history corresponding to 'obs'.
         current_public = self._current_public_state(
@@ -631,6 +650,7 @@ class MyTheory(TheorySpec):
         # -------------------------------------------------------------- #
         # Current-state potential
         # -------------------------------------------------------------- #
+
         phi_now = self._potential(
             player_id,
             obs,
@@ -640,6 +660,7 @@ class MyTheory(TheorySpec):
         # -------------------------------------------------------------- #
         # Terminal transition
         # -------------------------------------------------------------- #
+
         if terminated:
             return float(
                 -phi_now

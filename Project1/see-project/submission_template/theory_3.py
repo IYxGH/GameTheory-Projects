@@ -15,7 +15,7 @@ CFG = canonical_config()
 class MyTheory(TheorySpec):
     """Theory-informed features with conservative Bayesian updating."""
 
-    name = "bayesian-theory-v4"
+    name = "bayesian-theory"
 
     # 10 theory features are appended to the original observation.
     extra_feature_dim = 10
@@ -152,19 +152,6 @@ class MyTheory(TheorySpec):
     # ------------------------------------------------------------------ #
 
     def _bayesian_initiative(self, player_id, public_state):
-        """Bayesian posterior for initiative high-signal propensity.
-
-        Model:
-            y_t = 1  if opponent independently chooses sigma >= 0.75
-                  0  otherwise
-
-            y_t ~ Bernoulli(q)
-            q ~ Beta(alpha_0, beta_0)
-
-        The prior mean is weakly anchored to the opponent's configured prior
-        resolve mean. This is a modeling assumption about behavior, not a
-        claim that the environment itself defines P(y | rho).
-        """
         opp = self._opponent_id(player_id)
         pp = CFG.players[opp]
         stats = self._history_statistics(player_id, public_state)
@@ -311,7 +298,9 @@ class MyTheory(TheorySpec):
 
         return ramp * raw / m_t if m_t > 0.0 else 0.0
 
-    def _estimated_time_to_exhaustion(self, player_id, obs, public_state, est_rho, est_m, est_e):
+    def _estimated_time_to_exhaustion(
+        self, player_id, obs, public_state, est_rho, est_m, est_e
+    ):
         """Return our and opponent's estimated endurance durations."""
         pp_own = CFG.players[player_id]
         rho_own = self._clip01(float(obs[RHO]))
@@ -350,19 +339,6 @@ class MyTheory(TheorySpec):
         """Smooth strategic score based on estimated time advantage."""
         z = np.clip((tau_own - tau_opp) / 4.0, -8.0, 8.0)
         return float(1.0 / (1.0 + np.exp(-z)))
-
-    def _p_outlasting(self, player_id, obs, public_state):
-        est_rho, est_m, _ , _ = self._estimated_type(
-            player_id, public_state
-        )
-        est_e = self._estimated_opponent_endurance(
-            player_id,
-            public_state,
-            est_rho,
-            est_m,
-        )
-        tau_own, tau_opp = self._estimated_time_to_exhaustion(player_id, obs, public_state, est_rho, est_m, est_e)
-        return self._outlasting_score(tau_own, tau_opp)
 
     def _continuation_margin(
         self, player_id, obs, public_state, est_e
@@ -519,227 +495,66 @@ class MyTheory(TheorySpec):
     # ------------------------------------------------------------------ #
     # Potential-based shaping
     # ------------------------------------------------------------------ #
-    # ------------------------------------------------------------------ #
-    # Reward shaping
-    # ------------------------------------------------------------------ #
 
     def _current_public_state(self, next_public):
-        """
-        Recover the public state corresponding to 'obs'.
-
-        next_public is the public state AFTER the current transition, so its
-        history contains one additional stage compared with the state in obs.
-        """
+        """Recover public state corresponding to the current obs."""
         history = next_public.get("history", [])
-
         current_public = dict(next_public)
-
-        if history:
-            current_public["history"] = history[:-1]
-        else:
-            current_public["history"] = []
-
+        current_public["history"] = history[:-1] if history else []
         return current_public
 
-    def _tft_responsiveness(self, player_id, public_state):
-        """
-        Estimate how strongly the opponent behaves like Tit-for-Tat.
-
-        We only count genuine response opportunities:
-        - we made a high signal;
-        - the opponent became the only active player;
-        - we compare the opponent's response with our previous signal.
-
-        A high score means:
-            "The opponent is very likely to mirror my escalation."
-        """
-        opp = self._opponent_id(player_id)
-        history = public_state.get("history", [])
-
-        matches = 0
-        opportunities = 0
-
-        # Signal immediately before the current stage.
-        previous_own_sigma = 0.0
-
-        for h in history:
-
-            active = set(h.get("active", ()))
-
-            opp_sigma = float(
-                h["sigma"].get(opp, 0.0)
-            )
-
-            # The opponent is responding only when it is the unique
-            # active player.
-            opponent_is_responder = (
-                len(active) == 1
-                and opp in active
-            )
-
-            if (
-                opponent_is_responder
-                and previous_own_sigma >= 0.75
-            ):
-                opportunities += 1
-
-                # Signals are on the grid {0, .25, .5, .75, 1}.
-                # Exact matching is the cleanest TFT test.
-                if abs(opp_sigma - previous_own_sigma) < 1e-8:
-                    matches += 1
-
-            # Current signal becomes the standing signal for the next stage.
-            previous_own_sigma = float(
-                h["sigma"].get(player_id, previous_own_sigma)
-            )
-
-        if opportunities == 0:
-            return 0.0
-
-        return float(matches / opportunities)
-
     def _potential(self, player_id, obs, public_state):
-        # -------------------------------------------------------------- #
-        # 1. Our current economic position
-        # -------------------------------------------------------------- #
-
-        pp = CFG.players[player_id]
-
-        e_hat = float(
-            np.clip(obs[E_HAT], 0.0, 1.0)
+        est_rho, est_m, _, _ = self._estimated_type(
+            player_id, public_state
         )
-
-        rho = float(
-            np.clip(obs[RHO], 0.0, 1.0)
-        )
-
-        m_hat = float(
-            np.clip(obs[M_HAT], 0.0, 1.0)
-        )
-
-        K_own = float(obs[K_OWN]) * 4.0
-
-        sigma_own = float(obs[SIG_OWN])
-        sigma_opp = float(obs[SIG_OPP])
-        mediation = float(obs[MED])
-
-        # Exact exit value.
-        X = self._exit_value(
-            player_id,
-            K_own,
-            sigma_opp,
-            mediation,
-        )
-
-        # Approximate outlasting value.
-        B = pp.b0 * (
-            pp.b_base
-            + pp.b_e * e_hat
-            + pp.b_rho * rho
-        )
-
-        # Current flow cost.
-        g = self._own_flow_cost(
-            player_id,
-            obs,
-        )
-
-        # -------------------------------------------------------------- #
-        # 2. Local continuation advantage
-        # -------------------------------------------------------------- #
-
-        # This is not the full dynamic V^C, but it gives the potential a
-        # theoretically meaningful direction.
-        p_win = self._p_outlasting(player_id, obs, public_state)
-        local_margin = p_win * (B - X) - g
-
-        decision_term = np.tanh(
-            local_margin / 40.0
-        )
-
-        # -------------------------------------------------------------- #
-        # 3. Endurance health
-        # -------------------------------------------------------------- #
-
-        health_term = (
-            0.5 * e_hat
-            + 0.3 * rho
-            + 0.2 * m_hat
-            - 0.5
-        )
-
-        # Keep the health contribution relatively small.
-        health_term = np.tanh(
-            health_term
-        )
-        # -------------------------------------------------------------- #
-        # 4. Commitment
-        # -------------------------------------------------------------- #
-
-        # Scale commitment dynamically by the player's actual audience cost
-        # parameter (alpha). The U.S. will now properly fear K accumulation.
-        commitment_term = (
-                                  pp.alpha * K_own
-                          ) / 4.0
-
-        # -------------------------------------------------------------- #
-        # Escalation Trap
-        # -------------------------------------------------------------- #
-        total_escalation = (
-                sigma_own ** 2
-                + (pp.kappa / 3.0) * sigma_opp ** 2
-        )
-
-        # If the opponent is responsive, our own escalation is especially
-        # dangerous because it is likely to be mirrored.
-        tft_like = self._tft_responsiveness(
+        est_e = self._estimated_opponent_endurance(
             player_id,
             public_state,
+            est_rho,
+            est_m,
         )
 
-        responsive_escalation = (
-                tft_like * sigma_own ** 2
+        tau_own, tau_opp = self._estimated_time_to_exhaustion(
+            player_id,
+            obs,
+            public_state,
+            est_rho,
+            est_m,
+            est_e,
         )
 
-        # -------------------------------------------------------------- #
-        # Final potential
-        # -------------------------------------------------------------- #
-        return float(
-            1.00 * decision_term
-            + 0.20 * health_term
-            - 0.15 * commitment_term
-            - 0.20 * total_escalation
-            - 0.30 * responsive_escalation
+        margin = self._continuation_margin(
+            player_id,
+            obs,
+            public_state,
+            est_e,
         )
+        time_term = float(np.tanh((tau_own - tau_opp) / 4.0))
 
-    def shaping(self, player_id, obs, action, env_reward, next_obs, next_public, terminated):
-        """ Potential-based reward shaping """
+        return float(0.85 * margin + 0.15 * time_term)
 
-        # Recover the public history corresponding to 'obs'.
-        current_public = self._current_public_state(
-            next_public
-        )
+    def shaping(
+        self,
+        player_id,
+        obs,
+        action,
+        env_reward,
+        next_obs,
+        next_public,
+        terminated,
+    ):
+        """Potential-based shaping: F = gamma Phi(next) - Phi(now)."""
+        current_public = self._current_public_state(next_public)
 
-        # -------------------------------------------------------------- #
-        # Current-state potential
-        # -------------------------------------------------------------- #
         phi_now = self._potential(
             player_id,
             obs,
             current_public,
         )
 
-        # -------------------------------------------------------------- #
-        # Terminal transition
-        # -------------------------------------------------------------- #
+        # Terminal states use Phi = 0.
         if terminated:
-            return float(
-                -phi_now
-            )
-
-        # -------------------------------------------------------------- #
-        # Next-state potential
-        # -------------------------------------------------------------- #
+            return float(-phi_now)
 
         phi_next = self._potential(
             player_id,
@@ -747,10 +562,4 @@ class MyTheory(TheorySpec):
             next_public,
         )
 
-        # -------------------------------------------------------------- #
-        # Potential-based shaping
-        # -------------------------------------------------------------- #
-
-        return float(
-            GAMMA * phi_next - phi_now
-        )
+        return float(GAMMA * phi_next - phi_now)

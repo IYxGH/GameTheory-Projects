@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.4) (preloaded format=xelatex 2025.7.22)  8 AUG 2026 14:19
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.4) (preloaded format=xelatex 2025.7.22)  16 AUG 2026 18:57
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1379,7 +1379,7 @@ LaTeX2e <2025-06-01> patch level 1
 L3 programming layer <2025-07-11>
  ***********
 Package rerunfilecheck Info: File `report.out' has not changed.
-(rerunfilecheck)             Checksum: 3AD30E5BBE2AAA8ECB8739A266C1F562;2748.
+(rerunfilecheck)             Checksum: 16A7593D43597FCAB1BA360450AB2CA3;2572.
  ) 
 Here is how much of TeX's memory you used:
  33814 strings out of 403265
