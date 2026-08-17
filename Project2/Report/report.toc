@@ -1,3 +1,15 @@
 \contentsline {section}{\numberline {1}رای‌دهنده}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}پرسش‌های بخش اطلاعات کامل}{2}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}پرسش‌های بخش اطلاعات ناقص}{4}{subsection.1.2}%
 \contentsline {section}{\numberline {2}برگزار‌کننده}{6}{section.2}%
 \contentsline {section}{\numberline {3}پرسش نهایی}{11}{section.3}%
+\contentsline {subsection}{\numberline {3.1}نقطه شروع}{11}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}مثال‌های اولیه برای پرسش دوم}{11}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}شاید واقعا خروجی پاو در هسته باشد!؟}{12}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}ساختار یک مثال خوب}{12}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}کمی تفکر روی پرسش اول}{13}{subsection.3.5}%
+\contentsline {subsection}{\numberline {3.6} بررسی چند مثال بیشتر از ساختار خوب}{13}{subsection.3.6}%
+\contentsline {subsection}{\numberline {3.7}اندکی تحقیق}{14}{subsection.3.7}%
+\contentsline {subsection}{\numberline {3.8}مثال نقض و اثبات پرسش دوم}{14}{subsection.3.8}%
+\contentsline {subsection}{\numberline {3.9}بررسی بیشتر و چند ایده برای پرسش یک}{16}{subsection.3.9}%
+\contentsline {subsection}{\numberline {3.10}پایان ماجرا\dots }{17}{subsection.3.10}%

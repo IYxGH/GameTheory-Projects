@@ -7,31 +7,38 @@ from see.config import canonical_config, IRAN, US
 # Observation indices from see/env.py
 T_FRAC, RHO, M_HAT, E_HAT, K_OWN, K_OPP, SIG_OWN, SIG_OPP, MED = range(9)
 
+# Remaining observations are not needed directly here.
 GAMMA = 0.995
 CFG = canonical_config()
 
-class MyTheory(TheorySpec):
-    """Simple theory features designed for robust baseline play."""
 
-    name = ("theory-heuristic")
-    extra_feature_dim = 10
+class MyTheory(TheorySpec):
+    """Theory-informed features with conservative Bayesian updating."""
+    name = "final-theory"
+
+    extra_feature_dim = 12
+
 
     def on_episode_start(self, player_id):
-        # No hidden memory is needed.
-        # Everything is recomputed from obs + public history, which keeps the
-        # theory deterministic during both training and evaluation.
         pass
 
-    # ------------------------------------------------------------------ #
-    # Basic game helpers
-    # ------------------------------------------------------------------ #
-
+    # Basic Helpers
     def _opponent_id(self, player_id):
         return US if player_id == IRAN else IRAN
 
-    def _exit_value(self, pid, K, sigma_opp, M):
-        """Exact public exit value X_i from the environment."""
-        pp = CFG.players[pid]
+    @staticmethod
+    def _clip01(x):
+        return float(np.clip(x, 0.0, 1.0))
+
+    @staticmethod
+    def _signed_tanh(x, scale):
+        if scale <= 0.0:
+            return float(np.tanh(x))
+        return float(np.tanh(float(x) / scale))
+
+    def _exit_value(self, player_id, K, sigma_opp, M):
+        """Exact public exit value X_i from env.py."""
+        pp = CFG.players[player_id]
         return (
             pp.x0
             - pp.lam * K
@@ -48,13 +55,14 @@ class MyTheory(TheorySpec):
 
         m_bar = pp.m_lo + (pp.m_hi - pp.m_lo) * float(obs[M_HAT])
         m_t = m_bar * (
-            pp.m_floor + (1.0 - pp.m_floor) * min(e_hat, 1.0)
+            pp.m_floor
+            + (1.0 - pp.m_floor) * min(e_hat, 1.0)
         )
 
         t = int(round(float(obs[T_FRAC]) * CFG.T_bar))
         ramp = min(1.0, (t + 1) / CFG.ramp_T)
 
-        # obs contains the CURRENT standing postures in the state.
+        # env.py charges flow cost using the current standing postures.
         raw = (
             pp.c0
             + pp.kappa * float(obs[SIG_OPP])
@@ -64,192 +72,128 @@ class MyTheory(TheorySpec):
 
         return ramp * raw / m_t if m_t > 0.0 else 0.0
 
-    # ------------------------------------------------------------------ #
-    # Public-history statistics
-    # ------------------------------------------------------------------ #
 
+    # Public-history statistics
     def _history_statistics(self, player_id, public_state):
+        """Extract behavior that can legitimately be inferred from history."""
         opp = self._opponent_id(player_id)
         history = public_state.get("history", [])
 
         if not history:
             return {
-                "initiative_mean": 0.0,
-                "initiative_high": 0.0,
+                "initiative_high": 0,
                 "initiative_count": 0,
-                "response_match": 0.0,
+                "initiative_mean": 0.0,
+                "response_matches": 0,
                 "response_count": 0,
+                "response_delta_sum": 0.0,
             }
 
-        initiative_sum = 0.0
         initiative_high = 0
         initiative_count = 0
+        initiative_sum = 0.0
 
         response_matches = 0
         response_count = 0
+        response_delta_sum = 0.0
+
+        # Standing signal of the player immediately before each stage.
         previous_own_sigma = 0.0
 
         for h in history:
             active = set(h.get("active", ()))
-            opp_sigma = float(h["sigma"].get(opp, 0.0))
+            opp_sigma = float(h.get("sigma", {}).get(opp, 0.0))
+            own_sigma = float(h.get("sigma", {}).get(player_id, 0.0))
 
+            # Both players are active: this is the cleanest public evidence
+            # about whether the opponent independently chooses escalation.
             if len(active) == 2:
-                initiative_sum += opp_sigma
                 initiative_count += 1
+                initiative_sum += opp_sigma
                 if opp_sigma >= 0.75:
                     initiative_high += 1
 
+            # Only the opponent is active: it is responding to us.
             elif len(active) == 1 and opp in active:
-                # The opponent was responding to us. Compare its new signal
-                # with our previous standing signal.
                 response_count += 1
+                response_delta_sum += opp_sigma - previous_own_sigma
                 if abs(opp_sigma - previous_own_sigma) < 1e-8:
                     response_matches += 1
 
-            # The signal chosen in this stage becomes the standing signal for
-            # the next stage.
-            previous_own_sigma = float(h["sigma"].get(player_id, 0.0))
+            previous_own_sigma = own_sigma
 
         return {
+            "initiative_high": initiative_high,
+            "initiative_count": initiative_count,
             "initiative_mean": (
                 initiative_sum / initiative_count
-                if initiative_count > 0 else 0.0
+                if initiative_count else 0.0
             ),
-            "initiative_high": (
-                initiative_high / initiative_count
-                if initiative_count > 0 else 0.0
-            ),
-            "initiative_count": initiative_count,
-            "response_match": (
-                response_matches / response_count
-                if response_count > 0 else 0.0
-            ),
+            "response_matches": response_matches,
             "response_count": response_count,
+            "response_delta_sum": response_delta_sum,
         }
 
-    def _estimated_type(self, player_id, public_state):
-        """Estimate opponent resolve and cost-management ability."""
-        pp = CFG.players[self._opponent_id(player_id)]
+    # ------------------------------------------------------------------ #
+    # Bayesian behavioral update
+    # ------------------------------------------------------------------ #
+    def _bayesian_initiative(self, player_id, public_state):
+        opp = self._opponent_id(player_id)
+        pp = CFG.players[opp]
         stats = self._history_statistics(player_id, public_state)
-
-        aggression = (
-            0.6 * stats["initiative_high"]
-            + 0.4 * stats["initiative_mean"]
-        )
-
-        stages = stats["initiative_count"]
-        update_weight = min(stages / 10.0, 0.7)
 
         prior_rho = pp.rho_a / (pp.rho_a + pp.rho_b)
 
-        est_rho = (
-            (1.0 - update_weight) * prior_rho
-            + update_weight * aggression
-        )
+        prior_strength = 2
+        alpha0 = 1.0 + prior_strength * prior_rho
+        beta0 = 1.0 + prior_strength * (1.0 - prior_rho)
 
-        est_m = (
-            (1.0 - update_weight) * 0.5
-            + update_weight * aggression
-        )
+        n = stats["initiative_count"]
+        if n > 0:
+            high_rate = stats["initiative_high"] / n
+            per_step_evidence = 0.7 * stats["initiative_mean"] + 0.3 * high_rate
+        else:
+            per_step_evidence = 0.0
+
+        total_evidence = per_step_evidence * n
+
+        alpha = alpha0 + total_evidence
+        beta = beta0 + (n - total_evidence)
+
+        q_effective = alpha / (alpha + beta)
+
+        confidence = n / (n + prior_strength + 1.0)
 
         return (
-            float(np.clip(est_rho, 0.0, 1.0)),
-            float(np.clip(est_m, 0.0, 1.0)),
+            float(self._clip01(q_effective)),
+            float(self._clip01(confidence)),
+            float(prior_rho),
         )
 
-    def _p_outlasting(self, player_id, obs, public_state):
-        # Our current endurance
-
-        # e_hat is normalized by our own initial endurance.
-        e_own_hat = max(float(obs[E_HAT]), 0.0)
-
-        # Recover our actual initial endurance.
-        pp_own = CFG.players[player_id]
-
-        m_hat_own = float(np.clip(obs[M_HAT], 0.0, 1.0))
-        rho_own = float(np.clip(obs[RHO], 0.0, 1.0))
-
-        e0_own = pp_own.E0 * (
-            pp_own.e0_base
-            + pp_own.e0_rho * rho_own
-            + pp_own.e0_m * m_hat_own
-        )
-
-        e_own = e_own_hat * e0_own
-
-        # Estimate opponent endurance
-        est_rho, est_m = self._estimated_type(
-            player_id,
-            public_state,
-        )
-
-        e_opp_hat = self._estimated_opponent_endurance(
-            player_id,
-            public_state,
-            est_rho,
-            est_m,
-        )
-
+    def _estimated_type(self, player_id, public_state):
         opp = self._opponent_id(player_id)
-        pp_opp = CFG.players[opp]
+        pp = CFG.players[opp]
 
-        m_bar_opp = pp_opp.m_lo + (
-            pp_opp.m_hi - pp_opp.m_lo
-        ) * est_m
-
-        e0_opp = pp_opp.E0 * (
-            pp_opp.e0_base
-            + pp_opp.e0_rho * est_rho
-            + pp_opp.e0_m * est_m
+        q_effective, confidence, prior_rho = self._bayesian_initiative(
+            player_id, public_state
         )
 
-        e_opp = e_opp_hat * e0_opp
+        prior_m = pp.m_a / (pp.m_a + pp.m_b)
 
-        # Estimate current endurance consumption
-        g_own = self._own_flow_cost(
-            player_id,
-            obs,
-        )
+        # Resolve reacts strongly to the blended effective posture.
+        rho_score = prior_rho + 0.85 * confidence * (q_effective - prior_rho)
+        rho_score = self._clip01(rho_score)
 
-        g_opp = self._estimated_opponent_flow_cost(
-            player_id,
-            obs,
-            est_m,
-            e_opp_hat,
-        )
+        # m remains a bit more conservative, but updates faster now due to
+        # the higher confidence growth rate.
+        m_score = prior_m + 0.15 * confidence * (q_effective - prior_rho)
+        m_score = self._clip01(m_score)
 
-        # Avoid division by zero when the player is currently paying
-        # almost no flow cost.
-        EPS = 1e-6
+        return rho_score, m_score, q_effective, confidence
 
-        g_own = max(g_own, EPS)
-        g_opp = max(g_opp, EPS)
-
-        # Estimated time until endurance exhaustion
-        tau_own = e_own / g_own
-        tau_opp = e_opp / g_opp
-
-        # The game itself has a finite horizon.
-        tau_own = min(tau_own, float(CFG.T_bar))
-        tau_opp = min(tau_opp, float(CFG.T_bar))
-
-        # Convert the time advantage into a probability
-        TIME_SCALE = 4.0
-
-        z = (tau_own - tau_opp) / TIME_SCALE
-        z = float(np.clip(z, -8.0, 8.0))
-
-        p_outlast = 1.0 / (1.0 + np.exp(-z))
-
-        return float(p_outlast)
-
-    # ------------------------------------------------------------------ #
     # Hidden-endurance estimate
-    # ------------------------------------------------------------------ #
-
-    def _estimated_opponent_endurance(
-        self, player_id, public_state, est_rho, est_m
-    ):
+    def _estimated_opponent_endurance(self, player_id, public_state, est_rho, est_m):
+        """Reconstruct opponent endurance using only public history."""
         opp = self._opponent_id(player_id)
         pp = CFG.players[opp]
 
@@ -268,9 +212,11 @@ class MyTheory(TheorySpec):
 
         for h in public_state.get("history", []):
             t = int(h.get("t", 0))
-            sigma_opp = float(h["sigma"].get(opp, 0.0))
-            sigma_own = float(h["sigma"].get(player_id, 0.0))
+            sigma_opp = float(h.get("sigma", {}).get(opp, 0.0))
+            sigma_own = float(h.get("sigma", {}).get(player_id, 0.0))
 
+            # env.py uses the standing state BEFORE updating K for the next
+            # period, so compute current cost first.
             e_hat = max(estimated_e / e0, 0.0)
             m_t = m_bar * (
                 pp.m_floor
@@ -281,14 +227,6 @@ class MyTheory(TheorySpec):
 
             raw = (
                 pp.c0
-                + pp.kappa * sigma_opp * 0.0
-            )
-
-            # For the opponent, material pressure comes from OUR standing
-            # signal. Audience cost comes from the opponent's own K. Risk is
-            # the product of both standing signals.
-            raw = (
-                pp.c0
                 + pp.kappa * sigma_own
                 + pp.alpha * K_opp
                 + pp.eta * sigma_opp * sigma_own
@@ -297,18 +235,19 @@ class MyTheory(TheorySpec):
             if m_t > 0.0:
                 estimated_e -= ramp * raw / m_t
 
-            # The current action changes K only AFTER current-stage cost has
-            # been charged, exactly as in see/env.py.
+            # Current action affects next-stage commitment.
             K_opp = CFG.delta_K * K_opp + sigma_opp
 
-        return float(np.clip(max(estimated_e, 0.0) / e0, 0.0, 1.0))
+        return float(
+            self._clip01(max(estimated_e, 0.0) / e0)
+        )
 
     # ------------------------------------------------------------------ #
     # Strategic quantities
     # ------------------------------------------------------------------ #
 
     def _estimated_opponent_flow_cost(self, player_id, obs, est_m, est_e):
-        """Estimate the opponent's current effective flow cost."""
+        """Estimate opponent's current effective flow cost."""
         opp = self._opponent_id(player_id)
         pp = CFG.players[opp]
 
@@ -318,7 +257,8 @@ class MyTheory(TheorySpec):
 
         m_bar = pp.m_lo + (pp.m_hi - pp.m_lo) * est_m
         m_t = m_bar * (
-            pp.m_floor + (1.0 - pp.m_floor) * min(est_e, 1.0)
+            pp.m_floor
+            + (1.0 - pp.m_floor) * min(est_e, 1.0)
         )
 
         t = int(round(float(obs[T_FRAC]) * CFG.T_bar))
@@ -333,19 +273,52 @@ class MyTheory(TheorySpec):
 
         return ramp * raw / m_t if m_t > 0.0 else 0.0
 
-    def _continuation_margin(self, player_id, obs, est_e, public_state):
-        """Approximate p(win)*(B-X)-g for the current player."""
+    def _estimated_time_to_exhaustion(self, player_id, obs, public_state, est_rho, est_m, est_e):
+        """Return our and opponent's estimated endurance durations."""
+        pp_own = CFG.players[player_id]
+        rho_own = self._clip01(float(obs[RHO]))
+        m_hat_own = self._clip01(float(obs[M_HAT]))
+        e0_own = pp_own.E0 * (
+            pp_own.e0_base
+            + pp_own.e0_rho * rho_own
+            + pp_own.e0_m * m_hat_own
+        )
+        e_own = max(float(obs[E_HAT]), 0.0) * e0_own
+
+        g_own = max(self._own_flow_cost(player_id, obs), 1e-6)
+        tau_own = min(e_own / g_own, float(CFG.T_bar))
+
+        opp = self._opponent_id(player_id)
+        pp_opp = CFG.players[opp]
+        m_bar_opp = pp_opp.m_lo + (pp_opp.m_hi - pp_opp.m_lo) * est_m
+        e0_opp = pp_opp.E0 * (
+            pp_opp.e0_base
+            + pp_opp.e0_rho * est_rho
+            + pp_opp.e0_m * est_m
+        )
+        e_opp = max(est_e, 0.0) * e0_opp
+
+        g_opp = max(
+            self._estimated_opponent_flow_cost(
+                player_id, obs, est_m, est_e
+            ),
+            1e-6,
+        )
+        tau_opp = min(e_opp / g_opp, float(CFG.T_bar))
+
+        return float(tau_own), float(tau_opp)
+
+    def _outlasting_score(self, tau_own, tau_opp):
+        """Smooth strategic score based on estimated time advantage."""
+        z = np.clip((tau_own - tau_opp) / 4.0, -8.0, 8.0)
+        return float(1.0 / (1.0 + np.exp(-z)))
+
+    def _continuation_margin(self, player_id, obs, public_state, est_e):
+        """Approximate one-step continuation advantage."""
         pp = CFG.players[player_id]
 
-        e_hat = float(np.clip(obs[E_HAT], 0.0, 1.0))
-
-        p_win = self._p_outlasting(player_id, obs, public_state)
-
-        B = pp.b0 * (
-            pp.b_base
-            + pp.b_e * e_hat
-            + pp.b_rho * float(obs[RHO])
-        )
+        e_hat = self._clip01(float(obs[E_HAT]))
+        rho = self._clip01(float(obs[RHO]))
 
         X = self._exit_value(
             player_id,
@@ -354,300 +327,221 @@ class MyTheory(TheorySpec):
             float(obs[MED]),
         )
 
-        g = self._own_flow_cost(player_id, obs)
-
-        return float(np.tanh((p_win * (B - X) - g) / 40.0))
-
-    # ------------------------------------------------------------------ #
-    # Belief/state features
-    # ------------------------------------------------------------------ #
-
-    def extra_features(self, player_id, obs, public_state):
-        """Return 10 compact theory features."""
-        opp = self._opponent_id(player_id)
-
-        est_rho, est_m = self._estimated_type(
-            player_id, public_state
-        )
-        est_e = self._estimated_opponent_endurance(
-            player_id, public_state, est_rho, est_m
-        )
-
-        margin = self._continuation_margin(
-            player_id, obs, est_e, public_state
-        )
-
-        # Feature: relative endurance. Positive means we probably have more.
-        own_e = max(float(obs[E_HAT]), 0.0)
-        relative_endurance = float(
-            np.clip((own_e - est_e) / 1.0, -1.0, 1.0)
-        )
-
-        # Feature: estimated opponent current cost.
-        opponent_cost = self._estimated_opponent_flow_cost(
-            player_id, obs, est_m, est_e
-        )
-
-        # Exact public exit values.
-        X_i = self._exit_value(
-            player_id,
-            float(obs[K_OWN]) * 4.0,
-            float(obs[SIG_OPP]),
-            float(obs[MED]),
-        )
-        X_j = self._exit_value(
-            opp,
-            float(obs[K_OPP]) * 4.0,
-            float(obs[SIG_OWN]),
-            float(obs[MED]),
-        )
-
-        g_i = self._own_flow_cost(player_id, obs)
-
-        # Generic responsiveness statistic: how often the opponent mirrors
-        # our previous standing signal on response turns.
-        stats = self._history_statistics(player_id, public_state)
-        response_score = stats["response_match"]
-
-
-        return np.array(
-            [
-                est_rho,                       # 0 opponent resolve
-                est_m,                         # 1 opponent cost management
-                est_e,                         # 2 opponent endurance
-                margin,                         # 3 continuation margin
-                relative_endurance,             # 4 own - opponent endurance
-                min(opponent_cost / 8.0, 2.0), # 5 opponent flow cost
-                response_score,                # 6 response/TFT-likeness
-                X_i / 48.0,                    # 7 own exit value
-                X_j / 48.0,                    # 8 opponent exit value
-                min(g_i / 8.0, 2.0),           # 9 own flow cost
-            ],
-            dtype=np.float32,
-        )
-
-    # ------------------------------------------------------------------ #
-    # Reward shaping
-    # ------------------------------------------------------------------ #
-
-    def _current_public_state(self, next_public):
-        """
-        Recover the public state corresponding to 'obs'.
-
-        next_public is the public state AFTER the current transition, so its
-        history contains one additional stage compared with the state in obs.
-        """
-        history = next_public.get("history", [])
-
-        current_public = dict(next_public)
-
-        if history:
-            current_public["history"] = history[:-1]
-        else:
-            current_public["history"] = []
-
-        return current_public
-
-    def _tft_responsiveness(self, player_id, public_state):
-        """
-        Estimate how strongly the opponent behaves like Tit-for-Tat.
-
-        We only count genuine response opportunities:
-        - we made a high signal;
-        - the opponent became the only active player;
-        - we compare the opponent's response with our previous signal.
-
-        A high score means:
-            "The opponent is very likely to mirror my escalation."
-        """
-        opp = self._opponent_id(player_id)
-        history = public_state.get("history", [])
-
-        matches = 0
-        opportunities = 0
-
-        # Signal immediately before the current stage.
-        previous_own_sigma = 0.0
-
-        for h in history:
-
-            active = set(h.get("active", ()))
-
-            opp_sigma = float(
-                h["sigma"].get(opp, 0.0)
-            )
-
-            # The opponent is responding only when it is the unique
-            # active player.
-            opponent_is_responder = (
-                len(active) == 1
-                and opp in active
-            )
-
-            if (
-                opponent_is_responder
-                and previous_own_sigma >= 0.75
-            ):
-                opportunities += 1
-
-                # Signals are on the grid {0, .25, .5, .75, 1}.
-                # Exact matching is the cleanest TFT test.
-                if abs(opp_sigma - previous_own_sigma) < 1e-8:
-                    matches += 1
-
-            # Current signal becomes the standing signal for the next stage.
-            previous_own_sigma = float(
-                h["sigma"].get(player_id, previous_own_sigma)
-            )
-
-        if opportunities == 0:
-            return 0.0
-
-        return float(matches / opportunities)
-
-    def _potential(self, player_id, obs, public_state):
-        # -------------------------------------------------------------- #
-        # 1. Our current economic position
-        # -------------------------------------------------------------- #
-
-        pp = CFG.players[player_id]
-
-        e_hat = float(
-            np.clip(obs[E_HAT], 0.0, 1.0)
-        )
-
-        rho = float(
-            np.clip(obs[RHO], 0.0, 1.0)
-        )
-
-        m_hat = float(
-            np.clip(obs[M_HAT], 0.0, 1.0)
-        )
-
-        K_own = float(obs[K_OWN]) * 4.0
-
-        sigma_own = float(obs[SIG_OWN])
-        sigma_opp = float(obs[SIG_OPP])
-        mediation = float(obs[MED])
-
-        # Exact exit value.
-        X = self._exit_value(
-            player_id,
-            K_own,
-            sigma_opp,
-            mediation,
-        )
-
-        # Approximate outlasting value.
         B = pp.b0 * (
             pp.b_base
             + pp.b_e * e_hat
             + pp.b_rho * rho
         )
 
-        # Current flow cost.
-        g = self._own_flow_cost(
+        est_rho, est_m, _, _ = self._estimated_type(
+            player_id, public_state
+        )
+        tau_own, tau_opp = self._estimated_time_to_exhaustion(
             player_id,
             obs,
+            public_state,
+            est_rho,
+            est_m,
+            est_e,
+        )
+        p_proxy = self._outlasting_score(tau_own, tau_opp)
+        g = self._own_flow_cost(player_id, obs)
+
+        raw_margin = p_proxy * (B - X) - g
+        return self._signed_tanh(raw_margin, 40.0)
+
+    def _response_features(self, player_id, public_state):
+        stats = self._history_statistics(player_id, public_state)
+        n = stats["response_count"]
+        if n == 0:
+            return 0.0, 0.0
+
+        match_rate = stats["response_matches"] / n
+        mean_delta = stats["response_delta_sum"] / n
+
+        # Squash the signed response delta so it is always bounded.
+        response_delta = float(np.tanh(mean_delta / 0.25))
+        return 0.0, response_delta
+
+    # ------------------------------------------------------------------ #
+    # Theory features
+    # ------------------------------------------------------------------ #
+
+    def extra_features(self, player_id, obs, public_state):
+        """Return 10 theory-derived strategic features."""
+        est_rho, est_m, q_high, confidence = self._estimated_type(
+            player_id, public_state
         )
 
-        # -------------------------------------------------------------- #
-        # 2. State Expected Value (Fixed Sunk-Cost Bug)
-        # -------------------------------------------------------------- #
-
-        p_win = self._p_outlasting(player_id, obs, public_state)
-
-        # Approximate the absolute expected value of the current state,
-        # projecting roughly 4 steps of flow cost into the future.
-        expected_value = p_win * B + (1.0 - p_win) * X - (g * 4.0)
-
-        # Scale down to roughly fit a [-1, 1.5] range so it balances
-        # with the other heuristic components. (Base B is ~175).
-        decision_term = expected_value / 100.0
-
-        # -------------------------------------------------------------- #
-        # 3. Endurance Health
-        # -------------------------------------------------------------- #
-
-        health_term = (
-                0.5 * e_hat
-                + 0.3 * rho
-                + 0.2 * m_hat
-                - 0.5
+        est_e = self._estimated_opponent_endurance(
+            player_id, public_state, est_rho, est_m
         )
 
-        health_term = np.tanh(health_term)
+        tau_own, tau_opp = self._estimated_time_to_exhaustion(
+            player_id, obs, public_state, est_rho, est_m, est_e,
+        )
 
-        # -------------------------------------------------------------- #
-        # 4. Commitment
-        # -------------------------------------------------------------- #
+        opponent_cost = self._estimated_opponent_flow_cost(
+            player_id, obs, est_m, est_e,
+        )
 
-        commitment_term = (
-                                  pp.alpha * K_own
-                          ) / 4.0
+        _ , response_delta = self._response_features(
+            player_id, public_state
+        )
 
-        # -------------------------------------------------------------- #
-        # 5. Escalation & Risk Trap (Added Joint Risk)
-        # -------------------------------------------------------------- #
+        margin = self._continuation_margin(
+            player_id, obs, public_state, est_e,
+        )
 
-        # We now include the eta cross-term so the agent learns to fear
-        # mutual high-posture standoffs.
+        # Exit/outlasting advantage, distinct from the continuation margin
+        pp = CFG.players[player_id]
+        e_hat = self._clip01(float(obs[E_HAT]))
+        m_hat = self._clip01(float(obs[M_HAT]))
+        rho = self._clip01(float(obs[RHO]))
+
+        X = self._exit_value(
+            player_id, float(obs[K_OWN]) * 4.0, float(obs[SIG_OPP]), float(obs[MED]),
+        )
+
+        signaling_cost = pp.phi0  / (
+                (pp.phi_w + (1.0 - pp.phi_w) * rho)
+                * (pp.phi_w + (1.0 - pp.phi_w) * e_hat)
+                * (pp.phi_v + (1.0 - pp.phi_v) * m_hat)
+        )
+        signaling_cost = float(np.tanh(signaling_cost / 4.0))
+
+        # Feature vector, all bounded and numerically stable.
+        #
+        # 0: opponent resolve score
+        # 1: opponent m score
+        # 2: estimated opponent endurance fraction
+        # 3: Bayesian initiative-high posterior mean
+        # 4: Bayesian confidence/evidence level
+        # 5: own time-to-exhaustion
+        # 6: opponent time-to-exhaustion
+        # 7: estimated opponent current flow cost
+        # 8: mean response direction (escalate/de-escalate)
+        # 9: margin of continuing
+        # 10: exit value
+        # 11: signaling cost
+        return np.array(
+            [
+                est_rho,
+                est_m,
+                est_e,
+                q_high,
+                confidence,
+                tau_own / 20.0,
+                tau_opp / 20.0,
+                float(np.tanh(opponent_cost / 8.0)),
+                response_delta,
+                float(margin),
+                X / 40.0,
+                signaling_cost,
+            ],
+            dtype=np.float32,
+        )
+
+    # ------------------------------------------------------------------ #
+    # Potential-based shaping
+    # ------------------------------------------------------------------ #
+
+    def _current_public_state(self, next_public):
+        """Recover public state corresponding to the current obs."""
+        history = next_public.get("history", [])
+        current_public = dict(next_public)
+        current_public["history"] = history[:-1] if history else []
+        return current_public
+
+    def _expected_state_value(self, player_id, obs, public_state, est_e):
+        """Approximate absolute expected value of the current state."""
+        pp = CFG.players[player_id]
+
+        e_hat = self._clip01(float(obs[E_HAT]))
+        rho = self._clip01(float(obs[RHO]))
+
+        X = self._exit_value(
+            player_id,
+            float(obs[K_OWN]) * 4.0,
+            float(obs[SIG_OPP]),
+            float(obs[MED]),
+        )
+
+        B = pp.b0 * (
+                pp.b_base
+                + pp.b_e * e_hat
+                + pp.b_rho * rho
+        )
+
+        est_rho, est_m, _, _ = self._estimated_type(
+            player_id, public_state
+        )
+        tau_own, tau_opp = self._estimated_time_to_exhaustion(
+            player_id, obs, public_state, est_rho, est_m, est_e
+        )
+        p_proxy = self._outlasting_score(tau_own, tau_opp)
+        g = self._own_flow_cost(player_id, obs)
+
+        # Calculate absolute expected value: p(win)*B + p(lose)*X - Expected Costs
+        expected_value = p_proxy * B + (1.0 - p_proxy) * X - (g * 4.0)
+
+        return self._signed_tanh(expected_value, 100.0)
+
+    def _potential(self, player_id, obs, public_state):
+        pp = CFG.players[player_id]
+
+        est_rho, est_m, _, _ = self._estimated_type(player_id, public_state)
+        est_e = self._estimated_opponent_endurance(
+            player_id, public_state, est_rho, est_m
+        )
+
+        tau_own, tau_opp = self._estimated_time_to_exhaustion(
+            player_id, obs, public_state, est_rho, est_m, est_e
+        )
+
+        time_term = float(np.tanh((tau_own - tau_opp) / 4.0))
+
+        # 1. State Value
+        decision_term = self._expected_state_value(player_id, obs, public_state, est_e)
+
+        # 2. Commitment Penalty (Player-Aware)
+        K_own = float(obs[K_OWN]) * 4.0
+        commitment_term = (pp.alpha * K_own) / 4.0
+
+        # 3. Escalation Trap
+        sigma_own = float(obs[SIG_OWN])
+        sigma_opp = float(obs[SIG_OPP])
+
         total_escalation = (
                 sigma_own ** 2
                 + (pp.kappa / 3.0) * sigma_opp ** 2
                 + (pp.eta / 2.5) * (sigma_own * sigma_opp)
         )
 
-        tft_like = self._tft_responsiveness(
-            player_id,
-            public_state,
-        )
-
-        responsive_escalation = (
-                tft_like * sigma_own ** 2
-        )
-
-        # -------------------------------------------------------------- #
-        # Final potential (Added Mediation Attractor)
-        # -------------------------------------------------------------- #
+        # 4. Mediation Attractor
+        mediation = float(obs[MED])
 
         return float(
             0.80 * decision_term
-            + 0.20 * health_term
+            + 0.15 * time_term
             - 0.15 * commitment_term
             - 0.20 * total_escalation
-            - 0.30 * responsive_escalation
-            + 0.10 * mediation
+            + 0.15 * mediation
         )
 
     def shaping(self, player_id, obs, action, env_reward, next_obs, next_public, terminated):
-        """ Potential-based reward shaping """
+        """Potential-based shaping: F = gamma Phi(next) - Phi(now)."""
+        current_public = self._current_public_state(next_public)
 
-        # Recover the public history corresponding to 'obs'.
-        current_public = self._current_public_state(
-            next_public
-        )
-
-        # -------------------------------------------------------------- #
-        # Current-state potential
-        # -------------------------------------------------------------- #
         phi_now = self._potential(
             player_id,
             obs,
             current_public,
         )
 
-        # -------------------------------------------------------------- #
-        # Terminal transition
-        # -------------------------------------------------------------- #
+        # Terminal states use Phi = 0.
         if terminated:
-            return float(
-                -phi_now
-            )
-
-        # -------------------------------------------------------------- #
-        # Next-state potential
-        # -------------------------------------------------------------- #
+            return float(-phi_now)
 
         phi_next = self._potential(
             player_id,
@@ -655,10 +549,4 @@ class MyTheory(TheorySpec):
             next_public,
         )
 
-        # -------------------------------------------------------------- #
-        # Potential-based shaping
-        # -------------------------------------------------------------- #
-
-        return float(
-            GAMMA * phi_next - phi_now
-        )
+        return float(GAMMA * phi_next - phi_now)

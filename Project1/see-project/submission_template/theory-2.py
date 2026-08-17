@@ -1,3 +1,4 @@
+from sys import exception
 
 import numpy as np
 
@@ -632,13 +633,15 @@ class MyTheory(TheorySpec):
                 - 0.30 * responsive_escalation
             )
 
-        return float(
-            1.00 * decision_term
-            + 0.20 * health_term
-            - 0.15 * commitment_term
-            - 0.20 * total_escalation
-            - 0.30 * responsive_escalation
-        )
+        raise exception("hmm")
+
+        # return float(
+        #     1.00 * decision_term
+        #     + 0.20 * health_term
+        #     - 0.15 * commitment_term
+        #     - 0.20 * total_escalation
+        #     - 0.30 * responsive_escalation
+        # )
 
     def shaping(self, player_id, obs, action, env_reward, next_obs, next_public, terminated):
 

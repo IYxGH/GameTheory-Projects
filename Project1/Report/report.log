@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.4) (preloaded format=xelatex 2025.7.22)  16 AUG 2026 18:57
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.4) (preloaded format=xelatex 2025.7.22)  17 AUG 2026 13:02
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -1366,6 +1366,13 @@ Missing character: There is no ، in font cmr12!
 [11]
 
 [12]
+Underfull \hbox (badness 1028) in paragraph at lines 1021--1025
+[][][]\TU/lmroman10-regular(0)/m/n/12 _signed_tanh[]\TU/Sharif1.2Regular(0)/m/n
+/12 : همان $[]$ با یک پارامتر مقیاس؛ برای اینکه کمیت‌های بدون کران طبیعی را در[
+]
+ []
+
+
 
 [13]
 
@@ -1373,21 +1380,29 @@ Missing character: There is no ، in font cmr12!
 
 [15]
 
-[16] (report.aux)
+[16]
+
+[17]
+
+[18]
+
+[19]
+
+[20] (report.aux)
  ***********
 LaTeX2e <2025-06-01> patch level 1
 L3 programming layer <2025-07-11>
  ***********
 Package rerunfilecheck Info: File `report.out' has not changed.
-(rerunfilecheck)             Checksum: 16A7593D43597FCAB1BA360450AB2CA3;2572.
+(rerunfilecheck)             Checksum: B0AA2D258CA0AEFA461E3C08F66443A8;3163.
  ) 
 Here is how much of TeX's memory you used:
- 33814 strings out of 403265
- 722871 string characters out of 5461437
+ 33817 strings out of 403265
+ 722977 string characters out of 5461437
  1200252 words of memory out of 5000000
- 61682 multiletter control sequences out of 15000+600000
- 637209 words of font info for 114 fonts, out of 8000000 for 9000
+ 61684 multiletter control sequences out of 15000+600000
+ 637217 words of font info for 115 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 98i,9n,105p,1216b,417s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 98i,9n,105p,1216b,419s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on report.pdf (17 pages).
+Output written on report.pdf (21 pages).
