@@ -1,10 +1,10 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.4) (preloaded format=xelatex 2025.7.22)  17 AUG 2026 13:06
+This is XeTeX, Version 3.141592653-2.6-0.999997 (MiKTeX 25.4) (preloaded format=xelatex 2025.7.22)  17 AUG 2026 13:02
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
  %&-line parsing enabled.
-**"e:/University/Game Theory/Projects/Project2/Report/report.tex"
-(e:/University/Game Theory/Projects/Project2/Report/report.tex
+**"e:/University/Game Theory/Projects/Project1/Report/report.tex"
+(e:/University/Game Theory/Projects/Project1/Report/report.tex
 LaTeX2e <2025-06-01> patch level 1
 L3 programming layer <2025-07-11>
 (C:\Users\USER\AppData\Local\Programs\MiKTeX\tex/latex/base\article.cls
@@ -1294,39 +1294,39 @@ ing=persian-tex-text;"
  (report.aux)
 \openout1 = `report.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 99.
-LaTeX Font Info:    ... okay on input line 99.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 99.
-LaTeX Font Info:    ... okay on input line 99.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 99.
-LaTeX Font Info:    ... okay on input line 99.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 99.
-LaTeX Font Info:    ... okay on input line 99.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 99.
-LaTeX Font Info:    ... okay on input line 99.
-LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 99.
-LaTeX Font Info:    ... okay on input line 99.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 99.
-LaTeX Font Info:    ... okay on input line 99.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 99.
-LaTeX Font Info:    ... okay on input line 99.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 99.
-LaTeX Font Info:    ... okay on input line 99.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 99.
-LaTeX Font Info:    ... okay on input line 99.
-Package hyperref Info: Link coloring ON on input line 99.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 100.
+LaTeX Font Info:    ... okay on input line 100.
+Package hyperref Info: Link coloring ON on input line 100.
  (report.out) (report.out)
 \@outlinefile=\write4
 \openout4 = `report.out'.
 
 \c@lstlisting=\count426
-LaTeX Font Info:    Trying to load font information for U+msa on input line 124
+LaTeX Font Info:    Trying to load font information for U+msa on input line 125
 .
 
 (C:\Users\USER\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 124
+LaTeX Font Info:    Trying to load font information for U+msb on input line 125
 .
 
 (C:\Users\USER\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsb.fd
@@ -1344,15 +1344,10 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 [1]
 
 [2]
+Missing character: There is no ، in font cmr12!
+
 
 [3]
-Underfull \hbox (badness 1107) in paragraph at lines 300--312
-[][]\TU/Sharif1.2Regular(0)/m/n/12 هرچقدر $\OML/cmm/m/it/12 k$ \TU/Sharif1.2Reg
-ular(0)/m/n/12 بزرگتر باشد، احتمال انحراف بیشتر می‌شود. دلیل این موضوع این است 
-که ممکن است برخی[]
- []
-
-
 
 [4]
 
@@ -1371,27 +1366,15 @@ ular(0)/m/n/12 بزرگتر باشد، احتمال انحراف بیشتر می
 [11]
 
 [12]
+Underfull \hbox (badness 1028) in paragraph at lines 1021--1025
+[][][]\TU/lmroman10-regular(0)/m/n/12 _signed_tanh[]\TU/Sharif1.2Regular(0)/m/n
+/12 : همان $[]$ با یک پارامتر مقیاس؛ برای اینکه کمیت‌های بدون کران طبیعی را در[
+]
+ []
+
+
 
 [13]
-Overfull \hbox (21.56625pt too wide) detected at line 1071
-[]
- []
-
-File: Picture1.png Graphic file (type bmp)
-<Picture1.png>
-
-Overfull \hbox (2.7286pt too wide) in paragraph at lines 1098--1118
-[][]\TU/Sharif1.2Regular(0)/m/n/12 ساختار را به این صورت در نظر می‌گیریم. $\OML
-/cmm/m/it/12 c\OT1/cmr/m/n/12 (\OML/cmm/m/it/12 a \OT1/cmr/m/n/12 + \OML/cmm/m/
-it/12 c\OT1/cmr/m/n/12 )$ \TU/Sharif1.2Regular(0)/m/n/12 بازیکن نوع اول داریم، 
-که هرکدام کاندیدهای $\OMS/cmsy/m/n/12 f\OML/cmm/m/it/12 x[]; x[]; [] x[]\OMS/cm
-sy/m/n/12 g$[]
- []
-
-
-LaTeX Warning: `!h' float specifier changed to `!ht'.
-
-
 
 [14]
 
@@ -1399,21 +1382,27 @@ LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 [16]
 
-[17] (report.aux)
+[17]
+
+[18]
+
+[19]
+
+[20] (report.aux)
  ***********
 LaTeX2e <2025-06-01> patch level 1
 L3 programming layer <2025-07-11>
  ***********
 Package rerunfilecheck Info: File `report.out' has not changed.
-(rerunfilecheck)             Checksum: 5B9697F88A5A1FDA5DA38444C4AA7F5A;3297.
+(rerunfilecheck)             Checksum: B0AA2D258CA0AEFA461E3C08F66443A8;3163.
  ) 
 Here is how much of TeX's memory you used:
- 33810 strings out of 403265
- 722816 string characters out of 5461437
- 1199252 words of memory out of 5000000
- 61683 multiletter control sequences out of 15000+600000
- 635346 words of font info for 107 fonts, out of 8000000 for 9000
+ 33817 strings out of 403265
+ 722977 string characters out of 5461437
+ 1200252 words of memory out of 5000000
+ 61684 multiletter control sequences out of 15000+600000
+ 637217 words of font info for 115 fonts, out of 8000000 for 9000
  1348 hyphenation exceptions out of 8191
- 98i,11n,105p,1216b,523s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 98i,9n,105p,1216b,419s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on report.pdf (18 pages).
+Output written on report.pdf (21 pages).
